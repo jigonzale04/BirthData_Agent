@@ -8,7 +8,6 @@ st.set_page_config(layout="wide")
 st.title("Provisional Natality Data Dashboard")
 st.subheader("Birth Analysis by State and Gender")
 
-
 # =============================
 # DATA LOADING
 # =============================
@@ -19,7 +18,6 @@ def load_data():
         return pd.read_csv("Provisional_Natality_2025_CDC.csv")
     except Exception:
         return None
-
 
 df_raw = load_data()
 
@@ -46,7 +44,6 @@ if missing:
 
 df["births"] = pd.to_numeric(df["births"], errors="coerce")
 df = df.dropna(subset=["births"])
-
 
 # =============================
 # SIDEBAR FILTERS
@@ -76,7 +73,6 @@ if "All" not in month_sel:
 if filtered.empty:
     st.warning("No data matches selected filters.")
     st.stop()
-
 
 # =============================
 # VISUALIZATION
@@ -108,7 +104,6 @@ st.plotly_chart(fig, use_container_width=True)
 st.subheader("Filtered Records")
 st.dataframe(filtered.reset_index(drop=True), use_container_width=True, hide_index=True)
 
-
 # =============================
 # AI DATA ANALYST SECTION
 # =============================
@@ -132,7 +127,6 @@ if user_input:
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # Precompute structured aggregates
     total_births = int(filtered["births"].sum())
 
     state_totals = (
@@ -186,10 +180,12 @@ Dataset Context:
 """
 
     try:
+        api_key = st.secrets["GROQ_API_KEY"]
+
         response = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
             headers={
-                "Authorization": f"Bearer {st.secrets['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']}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
             },
             json={
@@ -200,12 +196,21 @@ Dataset Context:
                 ],
                 "temperature": 0.2,
             },
+            timeout=30,
         )
+
+        if response.status_code != 200:
+            st.error(f"Groq API Error {response.status_code}")
+            st.code(response.text)
+            st.stop()
 
         result = response.json()["choices"][0]["message"]["content"]
 
-    except Exception:
-        result = "The AI analyst is currently unavailable."
+    except KeyError:
+        result = "GROQ_API_KEY is not set in Streamlit Secrets."
+
+    except Exception as e:
+        result = f"Error: {str(e)}"
 
     with st.chat_message("assistant"):
         st.markdown(result)
