@@ -118,7 +118,7 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-user_input = st.chat_input("Ask me anything aboutdata presented in the chart above...")
+user_input = st.chat_input("Ask me anything about data presented in the chart above...")
 
 if user_input:
 
